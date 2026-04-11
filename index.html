@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Code Extractor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="header-info">
+        <h1>Code Extractor</h1>
+    </div>
+    <div class="input-group">
+        <input type="text" id="websiteUrl" placeholder="https://example.com" autocomplete="off">
+        <button id="fetchBtn">
+            <span id="btnText">Extract</span>
+            <div id="loader" class="loader"></div>
+        </button>
+    </div>
+</div>
+
+<div class="workspace">
+    <aside class="sidebar">
+        <div class="sidebar-header">EXPLORER</div>
+        <div id="fileTree" class="file-tree">
+            <div class="empty-state">No files extracted yet.</div>
+        </div>
+    </aside>
+
+    <main class="editor-container">
+        <div class="editor-header">
+            <span id="currentFileName">Welcome</span>
+            <button id="copyBtn" class="copy-btn" disabled>Copy File</button>
+        </div>
+        <textarea id="outputArea" readonly placeholder="// Enter a URL above and click 'Extract Site' to pull HTML, CSS, and JS assets..."></textarea>
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
