@@ -1,40 +1,42 @@
-// export.js - Handles packaging all extracted code into a downloadable ZIP
+// export.js - Handles ZIP generation, now with images!
 
 const downloadZipBtn = document.getElementById('downloadZipBtn');
 
 downloadZipBtn.addEventListener('click', async () => {
-    // 'extractedFiles' comes from script.js
     const files = Object.keys(extractedFiles);
-    
-    if (files.length === 0) {
-        return alert("No files to download. Please extract a website first.");
-    }
+    if (files.length === 0) return alert("No files to download.");
 
-    // Visual feedback
     downloadZipBtn.style.color = "var(--accent)";
-
-    // Create a new ZIP file instance
     const zip = new JSZip();
     
-    // Group files into folders for a clean project structure
+    // We create an array of promises to fetch images asynchronously
+    const fetchPromises = [];
+
     files.forEach(fileName => {
-        const fileContent = extractedFiles[fileName].content;
+        const fileData = extractedFiles[fileName];
         
-        if (fileName.endsWith('.css')) {
-            zip.folder("css").file(fileName, fileContent);
-        } else if (fileName.endsWith('.js')) {
-            zip.folder("js").file(fileName, fileContent);
-        } else {
-            // Put HTML files in the root folder
-            zip.file(fileName, fileContent);
+        if (fileData.type === 'code') {
+            if (fileName.endsWith('.css')) zip.folder("css").file(fileName, fileData.content);
+            else if (fileName.endsWith('.js')) zip.folder("js").file(fileName, fileData.content);
+            else zip.file(fileName, fileData.content); // HTML
+        } 
+        else if (fileData.type === 'image') {
+            // For images, we stored the URL. We must fetch it as a blob to ZIP it.
+            const p = fetch(fileData.content)
+                .then(res => res.blob())
+                .then(blob => {
+                    zip.folder("images").file(fileName, blob);
+                })
+                .catch(err => console.warn(`Could not zip image: ${fileName}`));
+            fetchPromises.push(p);
         }
     });
 
     try {
-        // Generate the ZIP file as a Blob
-        const content = await zip.generateAsync({ type: "blob" });
+        // Wait for all images to finish downloading
+        await Promise.all(fetchPromises);
         
-        // Create a temporary link to trigger the download
+        const content = await zip.generateAsync({ type: "blob" });
         const a = document.createElement("a");
         const url = URL.createObjectURL(content);
         a.href = url;
@@ -42,15 +44,12 @@ downloadZipBtn.addEventListener('click', async () => {
         document.body.appendChild(a);
         a.click();
         
-        // Cleanup
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            downloadZipBtn.style.color = ""; // Reset icon color
+            downloadZipBtn.style.color = ""; 
         }, 0);
-        
     } catch (err) {
-        console.error("Error creating ZIP:", err);
         alert("Failed to create ZIP file.");
     }
 });
