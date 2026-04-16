@@ -3,41 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Code Extractor</title>
+    <title>Code Extractor Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="top-bar">
-    <div class="header-info">
-        <h1>Code Extractor</h1>
+<div class="app-container">
+    <div class="top-bar">
+        <div class="header-info">
+            <h1>Code Extractor <span class="badge">PRO</span></h1>
+        </div>
+        <div class="input-group">
+            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            <input type="text" id="websiteUrl" placeholder="https://example.com" autocomplete="off">
+            <button id="fetchBtn">
+                <span id="btnText">Extract</span>
+                <div id="loader" class="loader"></div>
+            </button>
+        </div>
     </div>
-    <div class="input-group">
-        <input type="text" id="websiteUrl" placeholder="https://example.com" autocomplete="off">
-        <button id="fetchBtn">
-            <span id="btnText">Extract</span>
-            <div id="loader" class="loader"></div>
-        </button>
+
+    <div class="workspace">
+        <aside class="sidebar">
+            <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>EXPLORER</span>
+                <button id="downloadZipBtn" class="action-btn" title="Download all files as ZIP" style="padding: 0.1rem 0.3rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+            </div>
+            <div id="fileTree" class="file-tree">
+                <div class="empty-state">No files extracted yet.</div>
+            </div>
+        </aside>
+
+        <main class="editor-container">
+            <div class="editor-tabs">
+                <div class="tab active">
+                    <span id="currentFileName">Welcome</span>
+                </div>
+                <div class="editor-actions" style="display: flex; gap: 8px;">
+                    <button id="formatBtn" class="action-btn" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                        Format
+                    </button>
+                    <button id="copyBtn" class="action-btn" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copy
+                    </button>
+                </div>
+            </div>
+            <div class="code-wrapper">
+                <pre><code id="outputArea" class="language-javascript">// Enter a URL above and click 'Extract' to pull HTML, CSS, and JS assets...</code></pre>
+            </div>
+        </main>
     </div>
 </div>
 
-<div class="workspace">
-    <aside class="sidebar">
-        <div class="sidebar-header">EXPLORER</div>
-        <div id="fileTree" class="file-tree">
-            <div class="empty-state">No files extracted yet.</div>
-        </div>
-    </aside>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
 
-    <main class="editor-container">
-        <div class="editor-header">
-            <span id="currentFileName">Welcome</span>
-            <button id="copyBtn" class="copy-btn" disabled>Copy File</button>
-        </div>
-        <textarea id="outputArea" readonly placeholder="// Enter a URL above and click 'Extract Site' to pull HTML, CSS, and JS assets..."></textarea>
-    </main>
-</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-html.min.js"></script>
 
 <script src="script.js"></script>
+<script src="formatter.js"></script>
+<script src="export.js"></script>
 </body>
 </html>

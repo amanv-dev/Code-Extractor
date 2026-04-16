@@ -8,7 +8,6 @@ const fileTree = document.getElementById('fileTree');
 const currentFileName = document.getElementById('currentFileName');
 
 let extractedFiles = {};
-let activeFileKey = null;
 
 function formatUrl(url) {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -24,7 +23,6 @@ async function fetchViaProxy(targetUrl) {
     return await response.text();
 }
 
-// Crucial: This converts relative paths (like 'style.css') into full URLs based on the target website
 function resolveUrl(baseUrl, relativeUrl) {
     try {
         return new URL(relativeUrl, baseUrl).href;
@@ -44,8 +42,15 @@ fetchBtn.addEventListener('click', async () => {
     btnText.style.display = 'none';
     loader.style.display = 'block';
     extractedFiles = {};
-    fileTree.innerHTML = '<div class="empty-state">Extracting assets...</div>';
-    outputArea.value = '';
+    
+    fileTree.innerHTML = `<div class="empty-state">
+        <div class="loader" style="display:inline-block; border-top-color: var(--accent); border-right-color: var(--accent); margin-bottom: 10px;"></div>
+        <br>Extracting assets...
+    </div>`;
+    
+    outputArea.textContent = '// Extracting code, please wait...';
+    outputArea.className = 'language-javascript';
+    Prism.highlightElement(outputArea);
     copyBtn.disabled = true;
 
     try {
@@ -64,30 +69,23 @@ fetchBtn.addEventListener('click', async () => {
         if (inlineScripts) extractedFiles['inline-scripts.js'] = { category: 'JavaScript', content: inlineScripts };
 
         // --- EXTERNAL EXTRACTION ---
-        // Grab External CSS
         const cssLinks = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'))
-            .map(link => link.getAttribute('href'))
-            .filter(href => href);
+            .map(link => link.getAttribute('href')).filter(href => href);
 
         for (let href of cssLinks) {
             const fullUrl = resolveUrl(baseUrl, href);
             if (fullUrl) {
                 try {
                     const cssContent = await fetchViaProxy(fullUrl);
-                    // Extract filename from URL, default to style.css if weird
                     let fileName = fullUrl.split('/').pop().split('?')[0] || 'style.css';
                     if (!fileName.endsWith('.css')) fileName += '.css';
                     extractedFiles[fileName] = { category: 'CSS', content: cssContent };
-                } catch (e) {
-                    console.warn(`Failed to fetch CSS: ${fullUrl}`);
-                }
+                } catch (e) { console.warn(`Failed to fetch CSS: ${fullUrl}`); }
             }
         }
 
-        // Grab External JS
         const jsLinks = Array.from(doc.querySelectorAll('script[src]'))
-            .map(script => script.getAttribute('src'))
-            .filter(src => src);
+            .map(script => script.getAttribute('src')).filter(src => src);
 
         for (let src of jsLinks) {
             const fullUrl = resolveUrl(baseUrl, src);
@@ -97,19 +95,18 @@ fetchBtn.addEventListener('click', async () => {
                     let fileName = fullUrl.split('/').pop().split('?')[0] || 'script.js';
                     if (!fileName.endsWith('.js')) fileName += '.js';
                     extractedFiles[fileName] = { category: 'JavaScript', content: jsContent };
-                } catch (e) {
-                    console.warn(`Failed to fetch JS: ${fullUrl}`);
-                }
+                } catch (e) { console.warn(`Failed to fetch JS: ${fullUrl}`); }
             }
         }
 
-        // Update UI
         renderFileTree();
         selectFile('index.html');
 
     } catch (error) {
         fileTree.innerHTML = '<div class="empty-state">Extraction failed.</div>';
-        outputArea.value = `// Error fetching data.\n// It's possible the website blocked the proxy.\n\nError details: ${error.message}`;
+        outputArea.textContent = `// Error fetching data.\n// The website might be blocking the proxy.\n\nError details: ${error.message}`;
+        outputArea.className = 'language-javascript';
+        Prism.highlightElement(outputArea);
     } finally {
         fetchBtn.disabled = false;
         btnText.style.display = 'block';
@@ -117,33 +114,57 @@ fetchBtn.addEventListener('click', async () => {
     }
 });
 
+// SVG Icons for file tree
+const icons = {
+    folder: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+    html: `<svg class="file-icon icon-html" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`,
+    css: `<svg class="file-icon icon-css" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`,
+    js: `<svg class="file-icon icon-js" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`
+};
+
 function renderFileTree() {
     fileTree.innerHTML = '';
-    
-    // Get all extracted file names
     const files = Object.keys(extractedFiles);
-
-    // If no files, show empty state
     if (files.length === 0) {
         fileTree.innerHTML = '<div class="empty-state">No files extracted yet.</div>';
         return;
     }
 
-    // Render a clean, flat list of files without category headers
-    files.forEach(fileName => {
-        const fileEl = document.createElement('div');
-        fileEl.className = 'file-item';
-        fileEl.innerText = fileName;
-        fileEl.dataset.filename = fileName;
+    // Group files by category
+    const grouped = { HTML: [], CSS: [], JavaScript: [] };
+    files.forEach(f => {
+        if(f.endsWith('.css')) grouped.CSS.push(f);
+        else if(f.endsWith('.js')) grouped.JavaScript.push(f);
+        else grouped.HTML.push(f);
+    });
+
+    Object.entries(grouped).forEach(([category, catFiles]) => {
+        if (catFiles.length === 0) return;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'folder-group';
+        groupDiv.innerHTML = `<div class="folder-title">${icons.folder} ${category}</div>`;
+
+        catFiles.forEach(fileName => {
+            const fileEl = document.createElement('div');
+            fileEl.className = 'file-item';
+            fileEl.dataset.filename = fileName;
+            
+            let icon = icons.html;
+            if (category === 'CSS') icon = icons.css;
+            if (category === 'JavaScript') icon = icons.js;
+
+            fileEl.innerHTML = `${icon} <span>${fileName}</span>`;
+            fileEl.addEventListener('click', () => selectFile(fileName));
+            groupDiv.appendChild(fileEl);
+        });
         
-        fileEl.addEventListener('click', () => selectFile(fileName));
-        fileTree.appendChild(fileEl);
+        fileTree.appendChild(groupDiv);
     });
 }
 
 function selectFile(fileName) {
     if (!extractedFiles[fileName]) return;
-    activeFileKey = fileName;
     
     document.querySelectorAll('.file-item').forEach(el => {
         el.classList.remove('active');
@@ -151,23 +172,29 @@ function selectFile(fileName) {
     });
 
     currentFileName.innerText = fileName;
-    outputArea.value = extractedFiles[fileName].content;
+    
+    // Set text content and detect language for Prism
+    outputArea.textContent = extractedFiles[fileName].content;
+    let lang = 'markup'; // Default HTML
+    if (fileName.endsWith('.css')) lang = 'css';
+    if (fileName.endsWith('.js')) lang = 'javascript';
+    
+    outputArea.className = `language-${lang}`;
+    Prism.highlightElement(outputArea); // Trigger syntax highlighting
+    
     copyBtn.disabled = false;
 }
 
 copyBtn.addEventListener('click', async () => {
-    if (!outputArea.value) return;
+    // Copy the textContent (raw code) instead of value
+    if (!outputArea.textContent) return;
     try {
-        await navigator.clipboard.writeText(outputArea.value);
-        const originalText = copyBtn.innerText;
-        copyBtn.innerText = 'Copied!';
-        copyBtn.style.color = '#2f81f7';
-        copyBtn.style.borderColor = '#2f81f7';
+        await navigator.clipboard.writeText(outputArea.textContent);
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span style="color:#4ade80">Copied!</span>`;
         
         setTimeout(() => {
-            copyBtn.innerText = originalText;
-            copyBtn.style.color = ''; 
-            copyBtn.style.borderColor = '';
+            copyBtn.innerHTML = originalHTML;
         }, 2000);
     } catch (err) {
         alert('Failed to copy. Please copy manually.');
