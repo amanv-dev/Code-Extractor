@@ -1,10 +1,11 @@
-// formatter.js - Handles making messy/minified code readable
-
 const formatBtn = document.getElementById('formatBtn');
 
 formatBtn.addEventListener('click', () => {
-    // Rely on global variables from script.js
-    const activeFileName = document.getElementById('currentFileName').innerText;
+    // Determine the active file directly from the sidebar UI selection
+    const activeFileEl = document.querySelector('.file-item.active');
+    if (!activeFileEl) return;
+    const activeFileName = activeFileEl.dataset.filename;
+
     let code = outputArea.textContent;
 
     if (!code || code.includes('// Extracting code')) return;
@@ -12,7 +13,6 @@ formatBtn.addEventListener('click', () => {
     let formattedCode = code;
     const options = { indent_size: 4, space_in_empty_paren: true };
 
-    // Format based on file extension
     try {
         if (activeFileName.endsWith('.html')) {
             formattedCode = html_beautify(code, options);
@@ -22,14 +22,11 @@ formatBtn.addEventListener('click', () => {
             formattedCode = js_beautify(code, options);
         }
 
-        // Update the global state and the UI
         extractedFiles[activeFileName].content = formattedCode;
         outputArea.textContent = formattedCode;
         
-        // Re-apply Prism.js syntax highlighting
         Prism.highlightElement(outputArea);
         
-        // Visual feedback
         const originalText = formatBtn.innerHTML;
         formatBtn.innerHTML = `<span style="color:#4ade80">Formatted!</span>`;
         setTimeout(() => formatBtn.innerHTML = originalText, 1500);
@@ -39,10 +36,3 @@ formatBtn.addEventListener('click', () => {
         alert("Could not format this file.");
     }
 });
-
-// Enable format button when a file is selected (intercepting selectFile logic)
-const originalSelectFile = selectFile;
-selectFile = function(fileName) {
-    originalSelectFile(fileName);
-    formatBtn.disabled = false;
-};

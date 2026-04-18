@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <title>Code Extractor Pro - Pull Code from Any Website</title>
-    <meta name="title" content="Code Extractor Pro - Pull Code from Any Website">
+    <title>Code Extractor Pro</title>
+    <meta name="title" content="Code Extractor Pro">
     <meta name="description" content="Instantly extract, view, format, and download HTML, CSS, JavaScript, and Image assets from any URL.">
     
     <meta property="og:type" content="website">
@@ -26,11 +25,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     
     <link rel="stylesheet" href="style.css">
-</head>
 </head>
 <body>
 
@@ -50,12 +49,15 @@
         <div class="header-info">
             <h1>Code Extractor <span class="badge">PRO</span></h1>
         </div>
-        <div class="input-group">
-            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            <input type="text" id="websiteUrl" placeholder="https://example.com" autocomplete="off">
-            <button id="fetchBtn">
-                <span id="btnText">Extract</span>
-                <div id="loader" class="loader"></div>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="formatBtn" class="action-btn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                Format Code
+            </button>
+            <button id="togglePreviewBtn" class="action-btn" style="background-color: var(--accent); color: #ffffff; border: none; padding: 0.4rem 1.2rem; border-radius: 4px; font-weight: 500; font-size: 0.85rem; display: flex; align-items: center; cursor: pointer; transition: background-color 0.2s;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                Preview Site
             </button>
         </div>
     </div>
@@ -82,30 +84,8 @@
                 </div>
             </div>
 
-            <div class="editor-tabs">
-                <div style="display: flex;">
-                    <div id="tabCode" class="tab active">
-                        <span id="currentFileName">Welcome</span>
-                    </div>
-                    <div id="tabPreview" class="tab" style="cursor: pointer; opacity: 0.7;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        Preview Site
-                    </div>
-                </div>
-                <div class="editor-actions" style="display: flex; gap: 8px;">
-                    <button id="formatBtn" class="action-btn" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                        Format
-                    </button>
-                    <button id="copyBtn" class="action-btn" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        Copy
-                    </button>
-                </div>
-            </div>
-
-            <div id="viewCode" class="code-wrapper">
-                <pre><code id="outputArea" class="language-javascript">// Enter a URL above to start...</code></pre>
+            <div id="viewCode" class="code-wrapper hidden">
+                <pre class="line-numbers"><code id="outputArea" class="language-javascript"></code></pre>
             </div>
             
             <div id="viewPreview" class="preview-wrapper hidden">
@@ -122,6 +102,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-css.min.js"></script>

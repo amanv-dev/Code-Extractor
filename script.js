@@ -1,24 +1,15 @@
-// script.js - Core Extraction & State
-
-// Landing Elements
 const landingView = document.getElementById('landingView');
 const appWorkspace = document.getElementById('appWorkspace');
 const landingUrlInput = document.getElementById('landingUrlInput');
 const landingFetchBtn = document.getElementById('landingFetchBtn');
 
-// Workspace Elements
-const urlInput = document.getElementById('websiteUrl');
-const fetchBtn = document.getElementById('fetchBtn');
-const btnText = document.getElementById('btnText');
-const loader = document.getElementById('loader');
 const outputArea = document.getElementById('outputArea');
-const copyBtn = document.getElementById('copyBtn');
 const fileTree = document.getElementById('fileTree');
-const currentFileName = document.getElementById('currentFileName');
 
 const viewCode = document.getElementById('viewCode');
 const viewImage = document.getElementById('viewImage');
 const imagePreview = document.getElementById('imagePreview');
+const viewPreview = document.getElementById('viewPreview'); 
 
 let extractedFiles = {};
 
@@ -38,25 +29,19 @@ function resolveUrl(baseUrl, relativeUrl) {
     try { return new URL(relativeUrl, baseUrl).href; } catch (e) { return null; }
 }
 
-// MAIN EXTRACTION LOGIC
 async function startExtraction(rawUrl) {
     let baseUrl = rawUrl.trim();
     if (!baseUrl) return alert("Please enter a valid URL.");
     baseUrl = formatUrl(baseUrl);
 
-    // Transition UI if coming from landing page
+    landingFetchBtn.disabled = true;
+    landingFetchBtn.innerText = "Extracting...";
+
+    extractedFiles = {};
+    fileTree.innerHTML = `<div class="empty-state">Extracting Code & Media...</div>`;
+    
     landingView.classList.add('hidden');
     appWorkspace.classList.remove('hidden');
-    
-    // Sync the inputs
-    urlInput.value = baseUrl;
-
-    fetchBtn.disabled = true;
-    btnText.style.display = 'none';
-    loader.style.display = 'block';
-    extractedFiles = {};
-    
-    fileTree.innerHTML = `<div class="empty-state">Extracting Code & Media...</div>`;
     
     try {
         const htmlContent = await fetchViaProxy(baseUrl);
@@ -106,28 +91,19 @@ async function startExtraction(rawUrl) {
         selectFile('index.html');
 
     } catch (error) {
-        fileTree.innerHTML = '<div class="empty-state">Extraction failed.</div>';
+        fileTree.innerHTML = '<div class="empty-state">Extraction failed. Anti-bot protection blocked the proxy.</div>';
     } finally {
-        fetchBtn.disabled = false;
-        btnText.style.display = 'block';
-        loader.style.display = 'none';
+        landingFetchBtn.disabled = false;
+        landingFetchBtn.innerText = "Extract Site";
     }
 }
 
-// Event Listeners for both search bars
 landingFetchBtn.addEventListener('click', () => startExtraction(landingUrlInput.value));
 landingUrlInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') startExtraction(landingUrlInput.value);
 });
 
-fetchBtn.addEventListener('click', () => startExtraction(urlInput.value));
-urlInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') startExtraction(urlInput.value);
-});
-
-
 const icons = {
-    folder: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
     html: `<svg class="file-icon icon-html" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`,
     css: `<svg class="file-icon icon-css" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`,
     js: `<svg class="file-icon icon-js" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l1.5 13.5L12 21l6.5-3.5L20 4H4zm11 5H8.5l-.3-3H17l-1 8h-3v-3h3l.4-2z"></path></svg>`,
@@ -137,50 +113,46 @@ const icons = {
 function renderFileTree() {
     fileTree.innerHTML = '';
     const files = Object.keys(extractedFiles);
-    
-    const grouped = { HTML: [], CSS: [], JavaScript: [], Images: [] };
-    files.forEach(f => {
-        if(extractedFiles[f].category === 'Images') grouped.Images.push(f);
-        else if(f.endsWith('.css')) grouped.CSS.push(f);
-        else if(f.endsWith('.js')) grouped.JavaScript.push(f);
-        else grouped.HTML.push(f);
-    });
 
-    Object.entries(grouped).forEach(([category, catFiles]) => {
-        if (catFiles.length === 0) return;
+    if (files.length === 0) {
+        fileTree.innerHTML = '<div class="empty-state">No files extracted yet.</div>';
+        return;
+    }
 
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'folder-group';
-        groupDiv.innerHTML = `<div class="folder-title">${icons.folder} ${category}</div>`;
+    // Flat list rendering (no folders)
+    files.forEach(fileName => {
+        const fileData = extractedFiles[fileName];
+        const fileEl = document.createElement('div');
+        fileEl.className = 'file-item';
+        fileEl.dataset.filename = fileName;
 
-        catFiles.forEach(fileName => {
-            const fileEl = document.createElement('div');
-            fileEl.className = 'file-item';
-            fileEl.dataset.filename = fileName;
-            
-            let icon = icons.html;
-            if (category === 'CSS') icon = icons.css;
-            if (category === 'JavaScript') icon = icons.js;
-            if (category === 'Images') icon = icons.img;
+        let icon = icons.html;
+        if (fileData.category === 'CSS') icon = icons.css;
+        if (fileData.category === 'JavaScript') icon = icons.js;
+        if (fileData.category === 'Images') icon = icons.img;
 
-            fileEl.innerHTML = `${icon} <span>${fileName}</span>`;
-            fileEl.addEventListener('click', () => selectFile(fileName));
-            groupDiv.appendChild(fileEl);
-        });
-        
-        fileTree.appendChild(groupDiv);
+        fileEl.innerHTML = `${icon} <span>${fileName}</span>`;
+        fileEl.addEventListener('click', () => selectFile(fileName));
+        fileTree.appendChild(fileEl);
     });
 }
 
 function selectFile(fileName) {
     if (!extractedFiles[fileName]) return;
+
+    if (window.isPreviewMode) {
+        const toggleBtn = document.getElementById('togglePreviewBtn');
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Preview Site`;
+        toggleBtn.style.backgroundColor = 'var(--accent)';
+        window.isPreviewMode = false;
+    }
+    viewPreview.classList.add('hidden');
     
     document.querySelectorAll('.file-item').forEach(el => {
         el.classList.remove('active');
         if (el.dataset.filename === fileName) el.classList.add('active');
     });
 
-    currentFileName.innerText = fileName;
     const fileData = extractedFiles[fileName];
     
     if (fileData.type === 'image') {
@@ -188,7 +160,6 @@ function selectFile(fileName) {
         viewImage.classList.remove('hidden');
         imagePreview.src = fileData.content;
         
-        copyBtn.disabled = true;
         if(window.formatBtn) formatBtn.disabled = true;
     } else {
         viewImage.classList.add('hidden');
@@ -202,17 +173,6 @@ function selectFile(fileName) {
         outputArea.className = `language-${lang}`;
         Prism.highlightElement(outputArea); 
         
-        copyBtn.disabled = false;
         if(window.formatBtn) formatBtn.disabled = false;
     }
 }
-
-copyBtn.addEventListener('click', async () => {
-    if (!outputArea.textContent) return;
-    try {
-        await navigator.clipboard.writeText(outputArea.textContent);
-        const originalHTML = copyBtn.innerHTML;
-        copyBtn.innerHTML = `<span style="color:#4ade80">Copied!</span>`;
-        setTimeout(() => copyBtn.innerHTML = originalHTML, 2000);
-    } catch (err) {}
-});
