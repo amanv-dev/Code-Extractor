@@ -1,5 +1,12 @@
 // script.js - Core Extraction & State
 
+// Landing Elements
+const landingView = document.getElementById('landingView');
+const appWorkspace = document.getElementById('appWorkspace');
+const landingUrlInput = document.getElementById('landingUrlInput');
+const landingFetchBtn = document.getElementById('landingFetchBtn');
+
+// Workspace Elements
 const urlInput = document.getElementById('websiteUrl');
 const fetchBtn = document.getElementById('fetchBtn');
 const btnText = document.getElementById('btnText');
@@ -9,7 +16,6 @@ const copyBtn = document.getElementById('copyBtn');
 const fileTree = document.getElementById('fileTree');
 const currentFileName = document.getElementById('currentFileName');
 
-// View Containers
 const viewCode = document.getElementById('viewCode');
 const viewImage = document.getElementById('viewImage');
 const imagePreview = document.getElementById('imagePreview');
@@ -32,10 +38,18 @@ function resolveUrl(baseUrl, relativeUrl) {
     try { return new URL(relativeUrl, baseUrl).href; } catch (e) { return null; }
 }
 
-fetchBtn.addEventListener('click', async () => {
-    let baseUrl = urlInput.value.trim();
+// MAIN EXTRACTION LOGIC
+async function startExtraction(rawUrl) {
+    let baseUrl = rawUrl.trim();
     if (!baseUrl) return alert("Please enter a valid URL.");
     baseUrl = formatUrl(baseUrl);
+
+    // Transition UI if coming from landing page
+    landingView.classList.add('hidden');
+    appWorkspace.classList.remove('hidden');
+    
+    // Sync the inputs
+    urlInput.value = baseUrl;
 
     fetchBtn.disabled = true;
     btnText.style.display = 'none';
@@ -51,7 +65,6 @@ fetchBtn.addEventListener('click', async () => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
 
-        // Extract CSS
         const cssLinks = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).map(l => l.getAttribute('href')).filter(h => h);
         for (let href of cssLinks) {
             const fullUrl = resolveUrl(baseUrl, href);
@@ -65,7 +78,6 @@ fetchBtn.addEventListener('click', async () => {
             }
         }
 
-        // Extract JS
         const jsLinks = Array.from(doc.querySelectorAll('script[src]')).map(s => s.getAttribute('src')).filter(s => s);
         for (let src of jsLinks) {
             const fullUrl = resolveUrl(baseUrl, src);
@@ -79,14 +91,12 @@ fetchBtn.addEventListener('click', async () => {
             }
         }
 
-        // --- NEW: Extract Images ---
         const imgTags = Array.from(doc.querySelectorAll('img')).map(img => img.getAttribute('src')).filter(src => src);
         for (let src of imgTags) {
             const fullUrl = resolveUrl(baseUrl, src);
             if (fullUrl) {
                 let fileName = fullUrl.split('/').pop().split('?')[0];
                 if(fileName) {
-                    // We store the direct URL to avoid fetching large binary blobs right now
                     extractedFiles[fileName] = { category: 'Images', content: fullUrl, type: 'image' };
                 }
             }
@@ -102,7 +112,19 @@ fetchBtn.addEventListener('click', async () => {
         btnText.style.display = 'block';
         loader.style.display = 'none';
     }
+}
+
+// Event Listeners for both search bars
+landingFetchBtn.addEventListener('click', () => startExtraction(landingUrlInput.value));
+landingUrlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startExtraction(landingUrlInput.value);
 });
+
+fetchBtn.addEventListener('click', () => startExtraction(urlInput.value));
+urlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startExtraction(urlInput.value);
+});
+
 
 const icons = {
     folder: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
@@ -161,13 +183,11 @@ function selectFile(fileName) {
     currentFileName.innerText = fileName;
     const fileData = extractedFiles[fileName];
     
-    // UI Routing: Show code or image
     if (fileData.type === 'image') {
         viewCode.classList.add('hidden');
         viewImage.classList.remove('hidden');
         imagePreview.src = fileData.content;
         
-        // Disable code buttons
         copyBtn.disabled = true;
         if(window.formatBtn) formatBtn.disabled = true;
     } else {
@@ -195,8 +215,4 @@ copyBtn.addEventListener('click', async () => {
         copyBtn.innerHTML = `<span style="color:#4ade80">Copied!</span>`;
         setTimeout(() => copyBtn.innerHTML = originalHTML, 2000);
     } catch (err) {}
-});
-
-urlInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') fetchBtn.click();
 });

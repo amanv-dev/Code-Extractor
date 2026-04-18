@@ -348,3 +348,70 @@ code {
     font-size: 0.8rem;
 }
 .icon-btn:hover { color: var(--text-bright); }
+
+/* --- LANDING PAGE STYLES --- */
+.app-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
+
+.landing-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-main);
+    background-image: radial-gradient(#3e3e42 1px, transparent 0); /* Cool grid background */
+    background-size: 30px 30px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.landing-title {
+    font-size: 3.5rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    letter-spacing: -0.02em;
+}
+
+.landing-subtitle {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin-bottom: 3rem;
+    max-width: 500px;
+}
+
+.landing-input-group {
+    flex-grow: 0; /* FIX: This stops the massive vertical stretching */
+    width: 100%;
+    max-width: 650px;
+    height: 64px; 
+    background-color: #2d2d30; /* Sleek, dark grey */
+    border: 1px solid #3e3e42;
+    border-radius: 32px; /* Gives it a modern 'pill' shape */
+    padding: 0 8px 0 20px; /* Space for the icon and button */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.landing-input-group input {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    color: var(--text-bright);
+}
+
+.landing-input-group button {
+    font-size: 1rem;
+    min-width: 130px;
+    height: 48px; /* Slightly shorter than the container */
+    border-radius: 24px; /* Matches the pill shape */
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
